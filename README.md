@@ -24,6 +24,11 @@ The purpose of this project is to:
 - Demonstrate integration of hardware (GPIO), backend software (Flask/SQLite), and frontend UI
 - Apply Agile project management practices using GitHub Issues and Kanban
 
+## Team Members
+- Alexander Preston
+- Brayden
+- Carter
+
 ## System Architecture
 
 Hardware:
