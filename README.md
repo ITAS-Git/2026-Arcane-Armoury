@@ -1,11 +1,11 @@
-# D&D Digital Display System
+# Arcane Armoury
 Repository: 2026-Arcane Armoury
 Organization: ITAS-Git
 Course: ITAS Project Management (2026)
 
 ## Project Overview
 
-The D&D Digital Display System is a Raspberry Pi–based dual-screen encounter management tool designed to improve tabletop gameplay interaction and reduce paper dependency during sessions.
+The Arcane Armoury is a Raspberry Pi–based dual-screen encounter management tool designed to improve tabletop gameplay interaction and reduce paper dependency during sessions.
 
 The system separates player-facing information from Dungeon Master controls using a two-display architecture:
 
