@@ -27,7 +27,7 @@ The purpose of this project is to:
 ## Team Members
 - Alexander Preston
 - Brayden
-- Carter
+- Carter Ottenbreit
 
 ## System Architecture
 
