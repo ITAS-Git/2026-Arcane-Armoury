@@ -1,0 +1,310 @@
+:root{
+  --text: #111;
+  --blue: #1e78f0;
+  --green: rgba(45,187,90,0.92);
+}
+
+/* Paper background behind everything */
+body::before{
+  content:"";
+  position: fixed;
+  inset: 0;
+  background: url("oldpaper.png") center / cover no-repeat;
+  z-index: -10;
+}
+
+*{ box-sizing:border-box; }
+
+body{
+  margin:0;
+  font-family: system-ui, Arial, sans-serif;
+  color: var(--text);
+}
+
+/* DM layout: stage left, dock right */
+.mode-dm{
+  display:grid;
+  grid-template-columns: 1fr 360px;
+  height: 100vh;
+}
+
+/* Player layout: just stage */
+.mode-player{
+  height: 100vh;
+}
+
+/* Center the stage */
+.stage-wrap{
+  height: 100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: 18px;
+}
+
+/*
+  IMPORTANT: stage uses the UI image’s aspect ratio so positioning is stable.
+  Your new UI image is 1532x980.
+*/
+.stage{
+  position: relative;
+  height: 100%;
+  max-height: 100%;
+  aspect-ratio: 1532 / 980;
+  width: auto;
+  max-width: 100%;
+}
+
+.panel{
+  position:absolute;
+  z-index: 10;  /* was 1 */
+}
+
+/* The UI overlay image fills the stage exactly */
+.ui{
+  position:absolute;
+  inset:0;
+  z-index: 5;
+  width:100%;
+  height:100%;
+  object-fit: fill;
+  pointer-events:none;
+  user-select:none;
+}
+
+/* =======================
+   PANELS (shared)
+   ======================= */
+
+   .panel,
+   .center{
+     position:absolute;
+     color: var(--text);
+   }
+   
+   /* Corner placement (NEW image tuned) */
+   .panel--tl { left: 1.5%;  top: 8%;    width: 38%; height: 15%; }
+   .panel--tr { right: -4.8%; top: 8%;    width: 38%; height: 15%; }
+   .panel--bl { left: 1.5%;  bottom: 8%; width: 38%; height: 15%; }
+   .panel--br { right: -4.8%; bottom: 8%; width: 38%; height: 15%; }
+   
+   /* Name zone (top of plaque) */
+   .panel__name{
+     position:relative;
+     z-index: 10;
+     top: -30%;
+     left: 8%;
+     font-weight: 900;
+     font-size: 20px;
+     text-shadow: 0 1px 0 rgba(255,255,255,0.65);
+     pointer-events:none;
+   }
+   
+   /* HP zone (middle of plaque) */
+   .hp{
+     position:absolute;
+     top: 15%;
+     left: 9%;
+     width: 67%;
+     height: 50%;
+     border-radius: 999px;
+     overflow:hidden;
+   
+     /* subtle “glass” so green reads cleanly */
+     background: rgba(255,255,255,0.55);
+     border: 2px solid rgba(0,0,0,0.10);
+   }
+   
+   .hp__fill{
+     position:absolute;
+     inset:0;
+     width: 100%;
+     height:100%;
+     background: var(--green);
+     transition: width 250ms ease;
+   }
+   
+   .hp__text{
+     position:relative;
+     z-index: 10;
+     inset:0;
+     display:flex;
+     align-items:center;
+     justify-content:center;
+     font-weight: 900;
+     font-size: 16px;
+     text-shadow: 0 1px 0 rgba(255,255,255,0.65);
+     pointer-events:none;
+   }
+   
+   /* Slots zone (bottom of plaque) */
+/* Slots zone (bottom of plaque) */
+    .slots{
+      position:absolute;
+      left: 12%;
+      top: 85%;          /* anchor slots BELOW the panel reliably */
+      width: 76%;
+      display:flex;
+      flex-direction: column;
+      gap: 4px;
+      z-index: 20;       /* ensure above overlay if needed */
+}
+   
+   /* Slot visuals */
+   .slot-row{
+     display:flex;
+     align-items:center;
+     gap: 8px;
+   }
+   
+   .slot-label{
+     width: 28px;
+     font-weight: 900;
+     font-size: 12px;
+   }
+   
+   .slot{
+     width: 14px;
+     height: 14px;
+     border-radius: 999px;
+     background: rgba(0,0,0,0.12);
+     border: 2px solid rgba(0,0,0,0.18);
+   }
+   
+   .slot--filled{
+     background: var(--blue);
+     border-color: var(--blue);
+     box-shadow: 0 0 8px rgba(30,120,240,0.45);
+   }
+   
+   /* Center placement */
+   .center{
+    position:absolute;
+    left:51.5%;
+    top:54%;
+    transform:translate(-50%,-50%);
+    width:32%;
+    height:48%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  
+  .center__window{
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 200px;      /* forces space */
+    z-index: 50;            /* forces above most things */
+  }
+  
+  .center__portrait{
+    width: 90%;
+    height: 85%;
+    display: block;
+    object-fit: contain;
+    z-index: 51;
+  }
+   
+   .center__who{
+     font-weight: 900;
+     font-size: 18px;
+     text-align:center;
+     pointer-events:none;
+     position: relative;
+     z-index: 10;
+   }
+   
+   .center__note{
+     font-size: 14px;
+     opacity: 0.85;
+     text-align:center;
+     pointer-events:none;
+     position: relative;
+     z-index: 10;
+   }
+
+/* =======================
+   DM dock
+   ======================= */
+.dock{
+  background:#111;
+  color:#f2f2f2;
+  padding:14px;
+  overflow:auto;
+  border-left: 1px solid #2a2a2a;
+}
+
+.dock__title{
+  margin:0 0 10px;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.dock__subtitle{
+  margin: 12px 0 8px;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.dock__group{
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  padding: 10px;
+  margin: 10px 0;
+}
+
+.dock__group legend{
+  padding: 0 6px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.dock label{
+  display:grid;
+  gap: 6px;
+  margin: 8px 0;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.dock input, .dock select{
+  width: 100%;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid #2a2a2a;
+  background: #1a1a1a;
+  color:#f2f2f2;
+  outline:none;
+}
+
+.dock__levels{
+  margin-top: 8px;
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.dock__levels-title{
+  grid-column: 1 / -1;
+  font-weight: 900;
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.dock__btn{
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid #2a2a2a;
+  background:#1a1a1a;
+  color:#f2f2f2;
+  font-weight: 900;
+  cursor:pointer;
+}
+
+.dock__btn--primary{
+  background: rgba(30,120,240,0.85);
+  border-color: rgba(30,120,240,0.85);
+}

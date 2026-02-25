@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>D&D Display (DM)</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body class="mode-dm">
+  <!-- LEFT: the same stage as player -->
+  <div class="stage-wrap">
+    <div class="stage" aria-label="D&D party display (DM)">
+      <img class="ui" src="DD_Project_copy.png" alt="" />
+
+      <section class="panel panel--tl">
+        <div class="panel__name" id="p1-name">Player 1</div>
+        <div class="hp"><div class="hp__fill" id="p1-hp-fill"></div><div class="hp__text" id="p1-hp-text">HP: 0 / 0</div></div>
+        <div class="slots" id="p1-slots"></div>
+      </section>
+
+      <section class="panel panel--tr">
+        <div class="panel__name" id="p2-name">Player 2</div>
+        <div class="hp"><div class="hp__fill" id="p2-hp-fill"></div><div class="hp__text" id="p2-hp-text">HP: 0 / 0</div></div>
+        <div class="slots" id="p2-slots"></div>
+      </section>
+
+      <section class="panel panel--bl">
+        <div class="panel__name" id="p3-name">Player 3</div>
+        <div class="hp"><div class="hp__fill" id="p3-hp-fill"></div><div class="hp__text" id="p3-hp-text">HP: 0 / 0</div></div>
+        <div class="slots" id="p3-slots"></div>
+      </section>
+
+      <section class="panel panel--br">
+        <div class="panel__name" id="p4-name">Player 4</div>
+        <div class="hp"><div class="hp__fill" id="p4-hp-fill"></div><div class="hp__text" id="p4-hp-text">HP: 0 / 0</div></div>
+        <div class="slots" id="p4-slots"></div>
+      </section>
+
+      <section class="center">
+        <div class="center__title">Current Turn</div>
+      
+        <div class="center__window">
+            <img id="turn-portrait" class="center__portrait" src="./Tiefling.png" alt="">
+        </div>
+      
+        <div class="center__who" id="turn-name">Player 1</div>
+        <div class="center__note" id="turn-note">Status: Ready</div>
+      </section>
+    </div>
+  </div>
+
+  <!-- RIGHT: DM controls -->
+  <aside class="dock">
+    <h2 class="dock__title">DM Controls</h2>
+
+    <div class="dock__section">
+      <h3 class="dock__subtitle">Session Setup</h3>
+
+      <!-- Player 1 -->
+      <fieldset class="dock__group">
+        <legend>Player 1</legend>
+        <label>Name <input id="dm-p1-name" placeholder="e.g., Nyx"></label>
+        <label>Max HP <input id="dm-p1-max" type="number" min="1" value="30"></label>
+        <label>Current HP <input id="dm-p1-hp" type="number" min="0" value="30"></label>
+
+        <div class="dock__levels">
+          <div class="dock__levels-title">Spell Slots by Level</div>
+          <label>L1 total <input id="dm-p1-l1t" type="number" min="0" value="0"></label>
+          <label>L1 filled <input id="dm-p1-l1f" type="number" min="0" value="0"></label>
+          <label>L2 total <input id="dm-p1-l2t" type="number" min="0" value="0"></label>
+          <label>L2 filled <input id="dm-p1-l2f" type="number" min="0" value="0"></label>
+          <label>L3 total <input id="dm-p1-l3t" type="number" min="0" value="0"></label>
+          <label>L3 filled <input id="dm-p1-l3f" type="number" min="0" value="0"></label>
+          <label>L4 total <input id="dm-p1-l4t" type="number" min="0" value="0"></label>
+          <label>L4 filled <input id="dm-p1-l4f" type="number" min="0" value="0"></label>
+          <label>L5 total <input id="dm-p1-l5t" type="number" min="0" value="0"></label>
+          <label>L5 filled <input id="dm-p1-l5f" type="number" min="0" value="0"></label>
+          <label>L6 total <input id="dm-p1-l6t" type="number" min="0" value="0"></label>
+          <label>L6 filled <input id="dm-p1-l6f" type="number" min="0" value="0"></label>
+          
+        </div>
+      </fieldset>
+
+      <!-- Player 2 -->
+      <fieldset class="dock__group">
+        <legend>Player 2</legend>
+        <label>Name <input id="dm-p2-name" placeholder="e.g., Rowan"></label>
+        <label>Max HP <input id="dm-p2-max" type="number" min="1" value="25"></label>
+        <label>Current HP <input id="dm-p2-hp" type="number" min="0" value="25"></label>
+
+        <div class="dock__levels">
+          <div class="dock__levels-title">Spell Slots by Level</div>
+          <label>L1 total <input id="dm-p2-l1t" type="number" min="0" value="0"></label>
+          <label>L1 filled <input id="dm-p2-l1f" type="number" min="0" value="0"></label>
+          <label>L2 total <input id="dm-p2-l2t" type="number" min="0" value="0"></label>
+          <label>L2 filled <input id="dm-p2-l2f" type="number" min="0" value="0"></label>
+          <label>L3 total <input id="dm-p2-l3t" type="number" min="0" value="0"></label>
+          <label>L3 filled <input id="dm-p2-l3f" type="number" min="0" value="0"></label>
+          <label>L4 total <input id="dm-p2-l4t" type="number" min="0" value="0"></label>
+          <label>L4 filled <input id="dm-p2-l4f" type="number" min="0" value="0"></label>
+          <label>L5 total <input id="dm-p2-l5t" type="number" min="0" value="0"></label>
+          <label>L5 filled <input id="dm-p2-l5f" type="number" min="0" value="0"></label>
+          <label>L6 total <input id="dm-p2-l6t" type="number" min="0" value="0"></label>
+          <label>L6 filled <input id="dm-p2-l6f" type="number" min="0" value="0"></label>
+        </div>
+      </fieldset>
+
+      <!-- Player 3 -->
+      <fieldset class="dock__group">
+        <legend>Player 3</legend>
+        <label>Name <input id="dm-p3-name" placeholder="e.g., Kestrel"></label>
+        <label>Max HP <input id="dm-p3-max" type="number" min="1" value="18"></label>
+        <label>Current HP <input id="dm-p3-hp" type="number" min="0" value="18"></label>
+
+        <div class="dock__levels">
+          <div class="dock__levels-title">Spell Slots by Level</div>
+          <label>L1 total <input id="dm-p3-l1t" type="number" min="0" value="0"></label>
+          <label>L1 filled <input id="dm-p3-l1f" type="number" min="0" value="0"></label>
+          <label>L2 total <input id="dm-p3-l2t" type="number" min="0" value="0"></label>
+          <label>L2 filled <input id="dm-p3-l2f" type="number" min="0" value="0"></label>
+          <label>L3 total <input id="dm-p3-l3t" type="number" min="0" value="0"></label>
+          <label>L3 filled <input id="dm-p3-l3f" type="number" min="0" value="0"></label>
+          <label>L4 total <input id="dm-p3-l4t" type="number" min="0" value="0"></label>
+          <label>L4 filled <input id="dm-p3-l4f" type="number" min="0" value="0"></label>
+          <label>L5 total <input id="dm-p3-l5t" type="number" min="0" value="0"></label>
+          <label>L5 filled <input id="dm-p3-l5f" type="number" min="0" value="0"></label>
+          <label>L6 total <input id="dm-p3-l6t" type="number" min="0" value="0"></label>
+          <label>L6 filled <input id="dm-p3-l6f" type="number" min="0" value="0"></label>
+        </div>
+      </fieldset>
+
+      <!-- Player 4 -->
+      <fieldset class="dock__group">
+        <legend>Player 4</legend>
+        <label>Name <input id="dm-p4-name" placeholder="e.g., Sable"></label>
+        <label>Max HP <input id="dm-p4-max" type="number" min="1" value="40"></label>
+        <label>Current HP <input id="dm-p4-hp" type="number" min="0" value="40"></label>
+
+        <div class="dock__levels">
+          <div class="dock__levels-title">Spell Slots by Level</div>
+          <label>L1 total <input id="dm-p4-l1t" type="number" min="0" value="0"></label>
+          <label>L1 filled <input id="dm-p4-l1f" type="number" min="0" value="0"></label>
+          <label>L2 total <input id="dm-p4-l2t" type="number" min="0" value="0"></label>
+          <label>L2 filled <input id="dm-p4-l2f" type="number" min="0" value="0"></label>
+          <label>L3 total <input id="dm-p4-l3t" type="number" min="0" value="0"></label>
+          <label>L3 filled <input id="dm-p4-l3f" type="number" min="0" value="0"></label>
+          <label>L4 total <input id="dm-p4-l4t" type="number" min="0" value="0"></label>
+          <label>L4 filled <input id="dm-p4-l4f" type="number" min="0" value="0"></label>
+          <label>L5 total <input id="dm-p4-l5t" type="number" min="0" value="0"></label>
+          <label>L5 filled <input id="dm-p4-l5f" type="number" min="0" value="0"></label>
+          <label>L6 total <input id="dm-p4-l6t" type="number" min="0" value="0"></label>
+          <label>L6 filled <input id="dm-p4-l6f" type="number" min="0" value="0"></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="dock__group">
+        <legend>Turn</legend>
+        <label>Current Turn
+          <select id="dm-turn">
+            <option value="1">Player 1</option>
+            <option value="2">Player 2</option>
+            <option value="3">Player 3</option>
+            <option value="4">Player 4</option>
+          </select>
+        </label>
+
+        <label>Turn Note
+          <input id="dm-note" placeholder="e.g., Concentrating" />
+        </label>
+
+        <label>Portrait URL (optional)
+          <input id="dm-portrait" placeholder="e.g., portraits/nyx.png" />
+        </label>
+      </fieldset>
+
+      <button class="dock__btn dock__btn--primary" id="dm-apply">Apply / Broadcast</button>
+      <button class="dock__btn" id="dm-reset">Reset Saved State</button>
+    </div>
+  </aside>
+
+  <script src="app.js"></script>
+</body>
+</html>
+

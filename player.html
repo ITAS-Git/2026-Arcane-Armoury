@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>D&D Display (Player)</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body class="mode-player">
+  <div class="stage-wrap">
+    <div class="stage" aria-label="D&D party display (Player)">
+      <img class="ui" src="DD_Project_copy.png" alt="" />
+
+      <!-- Player Panels -->
+      <section class="panel panel--tl">
+        <div class="panel__name" id="p1-name">Player 1</div>
+        <div class="hp">
+          <div class="hp__fill" id="p1-hp-fill"></div>
+          <div class="hp__text" id="p1-hp-text">HP: 0 / 0</div>
+        </div>
+        <div class="slots" id="p1-slots"></div>
+      </section>
+
+      <section class="panel panel--tr">
+        <div class="panel__name" id="p2-name">Player 2</div>
+        <div class="hp">
+          <div class="hp__fill" id="p2-hp-fill"></div>
+          <div class="hp__text" id="p2-hp-text">HP: 0 / 0</div>
+        </div>
+        <div class="slots" id="p2-slots"></div>
+      </section>
+
+      <section class="panel panel--bl">
+        <div class="panel__name" id="p3-name">Player 3</div>
+        <div class="hp">
+          <div class="hp__fill" id="p3-hp-fill"></div>
+          <div class="hp__text" id="p3-hp-text">HP: 0 / 0</div>
+        </div>
+        <div class="slots" id="p3-slots"></div>
+      </section>
+
+      <section class="panel panel--br">
+        <div class="panel__name" id="p4-name">Player 4</div>
+        <div class="hp">
+          <div class="hp__fill" id="p4-hp-fill"></div>
+          <div class="hp__text" id="p4-hp-text">HP: 0 / 0</div>
+        </div>
+        <div class="slots" id="p4-slots"></div>
+      </section>
+
+      <!-- Center Turn Display -->
+      <section class="center">
+        <div class="center__title">Current Turn</div>
+
+        <div class="center__window">
+          <img id="turn-portrait" class="center__portrait" src="./Tiefling.png" alt="">
+        </div>
+
+        <div class="center__who" id="turn-name">Player 1</div>
+        <div class="center__note" id="turn-note">Status: Ready</div>
+      </section>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
