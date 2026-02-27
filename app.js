@@ -1,14 +1,14 @@
 /* app.js
    - Stores state in localStorage (so refresh keeps it)
-   - DM broadcasts updates via BroadcastChannel to Player screen
+   - DM broadcasts updates via WebSocket (Socket.IO)
    - Player listens and re-renders immediately
 */
 
-const STORAGE_KEY = "arcane_armoury_state_v3"; // bump key so old broken saves don't haunt you
-const CHANNEL_NAME = "arcane_armoury_channel";
-const bc = new BroadcastChannel(CHANNEL_NAME);
-
+const STORAGE_KEY = "arcane_armoury_state_v3";
 const SPELL_LEVELS = 6;
+
+// WebSocket connection to Flask-SocketIO server
+const socket = io();
 
 function clamp(n, min, max) {
   n = Number(n);
@@ -21,7 +21,6 @@ function makeDefaultSlots() {
   for (let lvl = 1; lvl <= SPELL_LEVELS; lvl++) {
     slots[lvl] = { t: 0, f: 0 };
   }
-  // D&D-ish default: L1 starts with 4/4, everything else 0/0
   slots[1] = { t: 4, f: 4 };
   return slots;
 }
@@ -53,9 +52,7 @@ function normalizeState(s) {
     const maxHp = clamp(p?.maxHp ?? base.players[idx].maxHp, 1, 9999);
     const hp = clamp(p?.hp ?? base.players[idx].hp, 0, maxHp);
 
-    // start with clean defaults, then overlay anything saved
     const slots = makeDefaultSlots();
-
     for (let lvl = 1; lvl <= SPELL_LEVELS; lvl++) {
       const t = clamp(p?.slots?.[lvl]?.t ?? slots[lvl].t, 0, 99);
       const f = clamp(p?.slots?.[lvl]?.f ?? slots[lvl].f, 0, t);
@@ -81,8 +78,7 @@ function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return defaultState();
-    const parsed = JSON.parse(raw);
-    return normalizeState(parsed);
+    return normalizeState(JSON.parse(raw));
   } catch {
     return defaultState();
   }
@@ -122,7 +118,6 @@ function renderSlots(i, slots) {
 
   wrap.innerHTML = "";
 
-  // Always render L1..L6 in a vertical list
   for (let level = 1; level <= SPELL_LEVELS; level++) {
     const t = clamp(slots?.[level]?.t ?? 0, 0, 99);
     const f = clamp(slots?.[level]?.f ?? 0, 0, t);
@@ -132,10 +127,9 @@ function renderSlots(i, slots) {
 
     const label = document.createElement("div");
     label.className = "slot-label";
-    label.textContent = `L${level}`; // keep it simple + safe
+    label.textContent = `L${level}`;
     row.appendChild(label);
 
-    // dots (only if total > 0)
     for (let n = 1; n <= t; n++) {
       const dot = document.createElement("span");
       dot.className = "slot" + (n <= f ? " slot--filled" : "");
@@ -160,8 +154,9 @@ function render(state) {
   setImg("turn-portrait", state.portrait || "Tiefling.png");
 }
 
-function broadcast(state) {
-  bc.postMessage({ type: "STATE", payload: state });
+/* WebSocket broadcast (DM -> server -> everyone) */
+function broadcastState(state) {
+  socket.emit("state_set", state);
 }
 
 /* DM: read inputs and push state */
@@ -213,7 +208,6 @@ function wireDm(state) {
     if (portrait) portrait.value = s.portrait || "";
   }
 
-  // Populate DM inputs from saved state on load (normalized)
   writeInputsFromState(state);
 
   applyBtn.addEventListener("click", () => {
@@ -229,7 +223,9 @@ function wireDm(state) {
 
     saveState(next);
     render(next);
-    broadcast(next);
+
+    // WebSocket broadcast to all screens
+    broadcastState(next);
 
     Object.assign(state, next);
   });
@@ -239,20 +235,51 @@ function wireDm(state) {
     const fresh = defaultState();
     saveState(fresh);
     render(fresh);
-    broadcast(fresh);
-    writeInputsFromState(fresh);
 
+    broadcastState(fresh);
+
+    writeInputsFromState(fresh);
     Object.assign(state, fresh);
   });
 }
 
-/* Player: listen for DM updates */
-bc.onmessage = (ev) => {
-  if (ev?.data?.type !== "STATE") return;
-  const incoming = normalizeState(ev.data.payload);
-  saveState(incoming);
-  render(incoming);
-};
+/* WebSocket receive: full state update from server */
+socket.on("state_updated", (incoming) => {
+  const s = normalizeState(incoming);
+  saveState(s);
+  render(s);
+});
+
+/* Optional: receive HP delta events (for Python button updates) */
+socket.on("hp_delta", ({ player, delta }) => {
+  const s = loadState();
+  const idx = clamp(player, 1, 4) - 1;
+  const p = s.players[idx];
+
+  p.hp = clamp((p.hp ?? 0) + Number(delta), 0, p.maxHp ?? 1);
+
+  const normalized = normalizeState(s);
+  saveState(normalized);
+  render(normalized);
+});
+
+/* Optional: receive spell slot delta events */
+socket.on("slot_delta", ({ player, level, delta }) => {
+  const s = loadState();
+  const idx = clamp(player, 1, 4) - 1;
+  const lvl = clamp(level, 1, SPELL_LEVELS);
+  const p = s.players[idx];
+
+  const slot = p.slots[lvl] || { t: 0, f: 0 };
+  slot.t = clamp(slot.t, 0, 99);
+  slot.f = clamp((slot.f ?? 0) + Number(delta), 0, slot.t);
+
+  p.slots[lvl] = slot;
+
+  const normalized = normalizeState(s);
+  saveState(normalized);
+  render(normalized);
+});
 
 const state = loadState();
 render(state);
