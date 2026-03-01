@@ -45,6 +45,16 @@ Software:
 - HTML/CSS/JavaScript (frontend)
 - Raspberry Pi OS
 
+## Environments
+
+### Main Display / Server
+Install dependencies:
+pip install -r requirements.txt
+
+### Raspberry Pi Hardware
+Install dependencies:
+pip install -r requirements-pi.txt
+
 ## Core Features
 
 1. Dual-Screen Architecture

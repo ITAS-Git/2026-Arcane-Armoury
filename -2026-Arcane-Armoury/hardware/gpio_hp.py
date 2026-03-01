@@ -1,183 +1,136 @@
 """
-Arcane Armory – Physical Button HP Control
+Arcane Armory – Bluetooth Button HP Control (BLE)
 
-This script runs on the Raspberry Pi and listens for physical
-button presses connected to GPIO pins.
+Listens for BLE notifications from an ESP32 and forwards
+HP delta updates to the Flask backend.
 
-When a button is pressed:
-- It sends a POST request to the Flask backend
-- The backend updates the character's HP in the database
-- The player screen updates in real time
+ESP32 payload format (examples):
+  P1:+1
+  P1:-1
 
 Author: Alexander Preston
 Course: ITAS 164
 """
 
-import RPi.GPIO as GPIO     # Library for controlling Raspberry Pi GPIO pins
-import time                 # Used for debounce timing
-import requests             # Used to send HTTP requests to Flask API
+import asyncio
+import requests
+from bleak import BleakClient, BleakScanner
 
+# ---------------------------
+# CONFIG
+# ---------------------------
 
-# ---------------------------------------------------
-# CONFIGURATION SECTION
-# ---------------------------------------------------
-
-# BCM pin numbering is used (recommended standard)
-# These are the GPIO pins connected to the buttons
-
-HP_UP_PIN = 17      # GPIO pin for increasing HP
-HP_DOWN_PIN = 27    # GPIO pin for decreasing HP
-
-# Character ID being controlled
-# In future versions, this could change dynamically
-CHARACTER_ID = 1
-
-# Flask API endpoint that handles HP updates
+# Flask API endpoint that updates HP
 API_URL = "http://localhost:5000/api/update_hp"
 
-# Software debounce delay (in seconds)
-# Prevents multiple triggers from one physical press
-DEBOUNCE_TIME = 0.2
+# Map ESP32 "player key" to database character_id
+PLAYER_TO_CHARACTER_ID = {
+    "P1": 1,
+    "P2": 2,
+    "P3": 3,
+    "P4": 4,
+}
+
+# Match these UUIDs to your ESP32 BLE Service/Characteristic
+SERVICE_UUID = "8f3a2f10-6c5f-4c3d-a9a0-111111111111"
+CHAR_EVENT_UUID = "8f3a2f11-6c5f-4c3d-a9a0-222222222222"
+
+# If you know the ESP32 name, set it here (recommended)
+TARGET_DEVICE_NAME = "ArcaneArmory-P1"  # change to your ESP32 name, or set to None
 
 
-# ---------------------------------------------------
-# GPIO INITIALIZATION
-# ---------------------------------------------------
+# ---------------------------
+# Flask Update
+# ---------------------------
 
-# Set GPIO mode to BCM (Broadcom chip numbering)
-GPIO.setmode(GPIO.BCM)
-
-# Disable warnings (optional but keeps terminal clean)
-GPIO.setwarnings(False)
-
-# Configure pins as input with internal pull-up resistors
-# Pull-up means:
-# - Default state = HIGH
-# - Button press connects pin to GND → LOW
-GPIO.setup(HP_UP_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.setup(HP_DOWN_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
-
-# Track last button press time for debounce control
-last_press_time = 0
-
-
-# ---------------------------------------------------
-# FUNCTION: Send HP Update to Flask
-# ---------------------------------------------------
-
-def update_hp(amount):
+def send_hp_delta(character_id: int, delta: int) -> None:
     """
-    Sends a POST request to the Flask backend API
-    with the HP change amount (+1 or -1).
-
-    The Flask server will:
-    - Validate the value
-    - Update the database
-    - Return confirmation
+    Sends a delta update to Flask.
+    Flask will validate and clamp HP in the database.
     """
     try:
-        payload = {
-            "character_id": CHARACTER_ID,
-            "delta": amount
-        }
+        payload = {"character_id": character_id, "delta": delta}
+        r = requests.post(API_URL, json=payload, timeout=2)
 
-        # Send POST request to Flask server
-        response = requests.post(API_URL, json=payload)
-
-        # Basic response validation
-        if response.status_code == 200:
-            print(f"HP updated by {amount}")
+        if r.status_code == 200:
+            print(f"Updated character_id={character_id} by {delta}")
         else:
-            print("API error:", response.text)
+            print(f"API error {r.status_code}: {r.text}")
 
     except Exception as e:
-        # Handles server offline / network errors
         print("Connection error:", e)
 
 
-# ---------------------------------------------------
-# BUTTON CALLBACK FUNCTIONS
-# ---------------------------------------------------
+# ---------------------------
+# BLE Notification Handler
+# ---------------------------
 
-def handle_hp_up(channel):
+def on_notify(_: int, data: bytearray) -> None:
     """
-    Triggered when the HP increase button is pressed.
-    Uses debounce logic to prevent rapid double-triggering.
+    Called whenever the ESP32 sends a BLE notification.
     """
-    global last_press_time
+    try:
+        msg = data.decode("utf-8").strip()
+        # Expected: "P1:+1" or "P1:-1"
+        player_key, delta_str = msg.split(":")
+        delta = int(delta_str)
 
-    current_time = time.time()
+        character_id = PLAYER_TO_CHARACTER_ID.get(player_key)
+        if character_id is None:
+            print(f"Unknown player key: {player_key} (msg={msg})")
+            return
 
-    # Check if enough time has passed since last press
-    if current_time - last_press_time > DEBOUNCE_TIME:
-        update_hp(+1)
-        last_press_time = current_time
+        send_hp_delta(character_id, delta)
+
+    except Exception as e:
+        print("Bad BLE message:", data, e)
 
 
-def handle_hp_down(channel):
+# ---------------------------
+# BLE Main Loop
+# ---------------------------
+
+async def find_device():
     """
-    Triggered when the HP decrease button is pressed.
-    Also uses debounce protection.
+    Scan for BLE devices and return the target device.
     """
-    global last_press_time
+    devices = await BleakScanner.discover(timeout=5.0)
 
-    current_time = time.time()
+    for d in devices:
+        if TARGET_DEVICE_NAME and d.name == TARGET_DEVICE_NAME:
+            return d
 
-    if current_time - last_press_time > DEBOUNCE_TIME:
-        update_hp(-1)
-        last_press_time = current_time
+    # Fallback: return first device advertising our service UUID (if available)
+    # Note: Some platforms don't expose service UUIDs in scan results reliably.
+    if not TARGET_DEVICE_NAME:
+        for d in devices:
+            if d.name and "ArcaneArmory" in d.name:
+                return d
 
-
-# ---------------------------------------------------
-# EVENT DETECTION (INTERRUPT-BASED INPUT)
-# ---------------------------------------------------
-
-"""
-Instead of constantly checking button state (polling),
-we use interrupt-based detection.
-
-GPIO.FALLING means:
-- Trigger when signal changes from HIGH to LOW
-- This happens when button is pressed (because pull-up resistor is used)
-
-bouncetime=200 adds additional hardware-level debounce (milliseconds).
-"""
-
-GPIO.add_event_detect(
-    HP_UP_PIN,
-    GPIO.FALLING,
-    callback=handle_hp_up,
-    bouncetime=200
-)
-
-GPIO.add_event_detect(
-    HP_DOWN_PIN,
-    GPIO.FALLING,
-    callback=handle_hp_down,
-    bouncetime=200
-)
+    return None
 
 
-print("HP Button System Active")
+async def run():
+    device = await find_device()
+    if not device:
+        print("ESP32 not found. Ensure it is powered and advertising.")
+        return
 
+    print(f"Connecting to {device.name} ({device.address})")
 
-# ---------------------------------------------------
-# MAIN LOOP
-# ---------------------------------------------------
-
-"""
-The script must remain running so that
-GPIO event detection continues to function.
-
-If the program exits, button detection stops.
-"""
-
-try:
     while True:
-        time.sleep(1)
+        try:
+            async with BleakClient(device.address) as client:
+                print("Connected. Subscribing to notifications...")
+                await client.start_notify(CHAR_EVENT_UUID, on_notify)
 
-except KeyboardInterrupt:
-    # Allows safe shutdown with Ctrl+C
-    print("Shutting down GPIO...")
-    GPIO.cleanup()   # Resets GPIO pins to safe state
+                while client.is_connected:
+                    await asyncio.sleep(1)
+
+        except Exception as e:
+            print("BLE disconnected/error, retrying in 2 seconds:", e)
+            await asyncio.sleep(2)
+
+
+if __name__ == "__main__":
+    asyncio.run(run())

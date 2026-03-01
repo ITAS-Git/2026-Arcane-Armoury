@@ -5,13 +5,14 @@ from pathlib import Path
 
 db = SQLAlchemy()
 
-# SocketIO is the WebSocket layer (Socket.IO protocol)
-# eventlet is a lightweight async server that supports websockets well
-socketio = SocketIO(cors_allowed_origins="*")  # ok for local LAN project
+# Force threading mode (works on Windows + Python 3.13)
+socketio = SocketIO(async_mode="threading", cors_allowed_origins="*")
+
 
 def create_app() -> Flask:
     app = Flask(__name__)
 
+    # Ensure instance folder exists (where sqlite DB will live)
     instance_path = Path(app.instance_path)
     instance_path.mkdir(parents=True, exist_ok=True)
 
@@ -28,7 +29,7 @@ def create_app() -> Flask:
 
     return app
 
+
 if __name__ == "__main__":
     app = create_app()
-    # IMPORTANT: run with socketio.run, not app.run
-    socketio.run(app, host="0.0.0.0", port=5000, debug=True)
+    socketio.run(app, host="0.0.0.0", port=5000, debug=True, allow_unsafe_werkzeug=True)

@@ -4,13 +4,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>D&D Display (Player)</title>
-  <link rel="stylesheet" href="styles.css" />
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
 </head>
 
 <body class="mode-player">
   <div class="stage-wrap">
     <div class="stage" aria-label="D&D party display (Player)">
-      <img class="ui" src="DD_Project_copy.png" alt="" />
+      <img class="ui" src="{{ url_for('static', filename='DD_Project_copy.png') }}" alt="" />
 
       <!-- Player Panels -->
       <section class="panel panel--tl">
@@ -54,7 +55,10 @@
         <div class="center__title">Current Turn</div>
 
         <div class="center__window">
-          <img id="turn-portrait" class="center__portrait" src="./Tiefling.png" alt="">
+          <img id="turn-portrait"
+               class="center__portrait"
+               src="{{ url_for('static', filename='Tiefling.png') }}"
+               alt="">
         </div>
 
         <div class="center__who" id="turn-name">Player 1</div>
@@ -63,6 +67,7 @@
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script defer src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>

@@ -3,7 +3,7 @@
    - DM broadcasts updates via WebSocket (Socket.IO)
    - Player listens and re-renders immediately
 */
-
+console.log("app.js loaded");
 const STORAGE_KEY = "arcane_armoury_state_v3";
 const SPELL_LEVELS = 6;
 
@@ -151,7 +151,7 @@ function render(state) {
   const current = state.players[state.turnIndex] || state.players[0];
   setText("turn-name", current?.name || "Player 1");
   setText("turn-note", state.turnNote || "");
-  setImg("turn-portrait", state.portrait || "Tiefling.png");
+  setImg("turn-portrait", state.portrait || "/static/Tiefling.png");
 }
 
 /* WebSocket broadcast (DM -> server -> everyone) */

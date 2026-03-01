@@ -1,35 +1,64 @@
-from flask import jsonify, request
-from .app import db, socketio
-from .models import Character
+from flask import render_template, request, jsonify
+from .app import socketio
+from flask_socketio import emit
 
 def register_routes(app):
+    # ----------------------------
+    # PAGE ROUTES (HTML)
+    # ----------------------------
 
-    @app.post("/api/update_hp")
-    def update_hp():
-        """
-        Called by:
-        - GPIO script (physical buttons)
-        - DM dashboard (manual change)
-        """
+    @app.get("/")
+    def home():
+        # Optional convenience redirect page
+        return render_template("player.html")
+
+    @app.get("/dm")
+    def dm_page():
+        return render_template("dm.html")
+
+    @app.get("/player")
+    def player_page():
+        return render_template("player.html")
+
+    # ----------------------------
+    # API ROUTES (Fix 1: delta broadcast)
+    # ----------------------------
+
+    @app.post("/api/hp_delta")
+    def hp_delta():
         data = request.get_json(force=True)
-        character_id = int(data["character_id"])
+        player = int(data["player"])
         delta = int(data["delta"])
 
-        c = Character.query.get(character_id)
-        if not c:
-            return jsonify({"error": "Character not found"}), 404
+        payload = {"player": player, "delta": delta}
+        socketio.emit("hp_delta", payload)
+        return jsonify({"success": True, "sent": payload})
 
-        # Update + validate
-        c.current_hp = max(0, min(c.max_hp, c.current_hp + delta))
-        db.session.commit()
+    @app.post("/api/slot_delta")
+    def slot_delta():
+        data = request.get_json(force=True)
+        player = int(data["player"])
+        level = int(data["level"])
+        delta = int(data["delta"])
 
-        payload = {
-            "character_id": c.id,
-            "current_hp": c.current_hp,
-            "max_hp": c.max_hp,
-        }
+        payload = {"player": player, "level": level, "delta": delta}
+        socketio.emit("slot_delta", payload)
+        return jsonify({"success": True, "sent": payload})
+    
+    @socketio.on("connect")
+    def on_connect():
+    # Optional: helps debugging
+        print("Socket client connected")
 
-        # Broadcast to ALL connected screens
-        socketio.emit("hp_updated", payload)
+    @socketio.on("disconnect")
+    def on_disconnect():
+        print("Socket client disconnected")
 
-        return jsonify({"success": True, **payload})
+    @socketio.on("state_set")
+    def on_state_set(state):
+        """
+        DM sends full state snapshot.
+        Server re-broadcasts to everyone (DM + Player screens).
+        """
+        # Broadcast to all clients
+        socketio.emit("state_updated", state)
