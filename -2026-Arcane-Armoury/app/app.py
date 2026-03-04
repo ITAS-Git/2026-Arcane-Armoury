@@ -2,6 +2,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_socketio import SocketIO
 from pathlib import Path
+import os
 
 db = SQLAlchemy()
 
@@ -11,6 +12,9 @@ socketio = SocketIO(async_mode="threading", cors_allowed_origins="*")
 
 def create_app() -> Flask:
     app = Flask(__name__)
+
+    # Secret key — set SECRET_KEY env var in production
+    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-change-me-in-production")
 
     # Ensure instance folder exists (where sqlite DB will live)
     instance_path = Path(app.instance_path)
