@@ -20,8 +20,8 @@ from bleak import BleakClient, BleakScanner
 # CONFIG
 # ---------------------------
 
-# Flask API endpoint that updates HP
-API_URL = "http://localhost:5000/api/update_hp"
+# Flask API endpoint that updates HP — matches /api/hp_delta in routes.py
+API_URL = "http://localhost:5000/api/hp_delta"
 
 # Map ESP32 "player key" to database character_id
 PLAYER_TO_CHARACTER_ID = {
@@ -45,11 +45,12 @@ TARGET_DEVICE_NAME = "ArcaneArmory-P1"  # change to your ESP32 name, or set to N
 
 def send_hp_delta(character_id: int, delta: int) -> None:
     """
-    Sends a delta update to Flask.
+    Sends a delta update to Flask /api/hp_delta.
+    Payload uses 'player' key to match the route's expected shape.
     Flask will validate and clamp HP in the database.
     """
     try:
-        payload = {"character_id": character_id, "delta": delta}
+        payload = {"player": character_id, "delta": delta}
         r = requests.post(API_URL, json=payload, timeout=2)
 
         if r.status_code == 200:
