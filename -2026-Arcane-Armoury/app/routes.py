@@ -9,7 +9,6 @@ def register_routes(app):
 
     @app.get("/")
     def home():
-        # Optional convenience redirect page
         return render_template("player.html")
 
     @app.get("/dm")
@@ -21,14 +20,17 @@ def register_routes(app):
         return render_template("player.html")
 
     # ----------------------------
-    # API ROUTES (Fix 1: delta broadcast)
+    # API ROUTES
     # ----------------------------
 
     @app.post("/api/hp_delta")
     def hp_delta():
         data = request.get_json(force=True)
-        player = int(data["player"])
-        delta = int(data["delta"])
+        try:
+            player = int(data["player"])
+            delta = int(data["delta"])
+        except (KeyError, TypeError, ValueError) as e:
+            return jsonify({"success": False, "error": f"Invalid payload: {e}"}), 400
 
         payload = {"player": player, "delta": delta}
         socketio.emit("hp_delta", payload)
@@ -37,17 +39,23 @@ def register_routes(app):
     @app.post("/api/slot_delta")
     def slot_delta():
         data = request.get_json(force=True)
-        player = int(data["player"])
-        level = int(data["level"])
-        delta = int(data["delta"])
+        try:
+            player = int(data["player"])
+            level = int(data["level"])
+            delta = int(data["delta"])
+        except (KeyError, TypeError, ValueError) as e:
+            return jsonify({"success": False, "error": f"Invalid payload: {e}"}), 400
 
         payload = {"player": player, "level": level, "delta": delta}
         socketio.emit("slot_delta", payload)
         return jsonify({"success": True, "sent": payload})
-    
+
+    # ----------------------------
+    # SOCKET EVENTS
+    # ----------------------------
+
     @socketio.on("connect")
     def on_connect():
-    # Optional: helps debugging
         print("Socket client connected")
 
     @socketio.on("disconnect")
@@ -58,7 +66,6 @@ def register_routes(app):
     def on_state_set(state):
         """
         DM sends full state snapshot.
-        Server re-broadcasts to everyone (DM + Player screens).
+        Re-broadcast to everyone EXCEPT the sender to avoid double-render on DM.
         """
-        # Broadcast to all clients
-        socketio.emit("state_updated", state)
+        emit("state_updated", state, broadcast=True, include_self=False)
