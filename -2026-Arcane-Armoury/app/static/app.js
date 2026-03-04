@@ -12,21 +12,6 @@ const SPELL_LEVELS = 6;
 // WebSocket connection to Flask-SocketIO server
 const socket = io();
 
-// --- Connection lifecycle logging ---
-socket.on("connect", () => {
-  console.log("[Socket] Connected. SID:", socket.id);
-  // Request a full state push so Player is immediately up-to-date on load
-  socket.emit("request_state");
-});
-
-socket.on("disconnect", (reason) => {
-  console.warn("[Socket] Disconnected:", reason);
-});
-
-socket.on("connect_error", (err) => {
-  console.error("[Socket] Connection error:", err.message);
-});
-
 function clamp(n, min, max) {
   n = Number(n);
   if (Number.isNaN(n)) n = min;
@@ -174,7 +159,9 @@ function render(state) {
 }
 
 /* WebSocket broadcast (DM -> server -> everyone) */
+let _suppressNextUpdate = false;
 function broadcastState(state) {
+  _suppressNextUpdate = true;  // DM tab: ignore the echo coming back
   socket.emit("state_set", state);
 }
 
@@ -264,6 +251,12 @@ function wireDm(state) {
 
 /* WebSocket receive: full state update from server */
 socket.on("state_updated", (incoming) => {
+  if (_suppressNextUpdate) {
+    _suppressNextUpdate = false;
+    console.log("[Socket] state_updated echo suppressed on DM tab");
+    return;
+  }
+  console.log("[Socket] state_updated received — rendering");
   const s = normalizeState(incoming);
   saveState(s);
   render(s);
