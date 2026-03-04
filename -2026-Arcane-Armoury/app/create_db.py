@@ -1,5 +1,17 @@
-from .app import create_app, db
-from .models import Character, SpellSlot, InitiativeEntry
+"""
+Run directly:   python create_db.py
+Or as module:   python -m arcane_armory.create_db
+
+sys.path manipulation lets the relative-style imports work in both cases.
+"""
+import sys
+from pathlib import Path
+
+# Allow running as a top-level script (python create_db.py)
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from arcane_armory.app import create_app, db
+from arcane_armory.models import Character, SpellSlot, InitiativeEntry
 
 def seed():
     chars = [
