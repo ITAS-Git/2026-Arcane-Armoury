@@ -29,6 +29,7 @@ class SpellSlot(db.Model):
 
     __table_args__ = (
         db.UniqueConstraint("character_id", "slot_level", name="uq_character_slotlevel"),
+        db.CheckConstraint("slot_level BETWEEN 1 AND 9", name="ck_slot_level_range"),
     )
 
 class InitiativeEntry(db.Model):
