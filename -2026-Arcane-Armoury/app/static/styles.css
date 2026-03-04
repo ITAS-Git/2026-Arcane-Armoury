@@ -84,9 +84,9 @@ body{
    
    /* Corner placement (NEW image tuned) */
    .panel--tl { left: 1.5%;  top: 8%;    width: 38%; height: 15%; }
-   .panel--tr { right: -4.8%; top: 8%;    width: 38%; height: 15%; }
+   .panel--tr { right: 0;    top: 8%;    width: 38%; height: 15%; transform: translateX(-1%); }
    .panel--bl { left: 1.5%;  bottom: 8%; width: 38%; height: 15%; }
-   .panel--br { right: -4.8%; bottom: 8%; width: 38%; height: 15%; }
+   .panel--br { right: 0;    bottom: 8%; width: 38%; height: 15%; transform: translateX(-1%); }
    
    /* Name zone (top of plaque) */
    .panel__name{
