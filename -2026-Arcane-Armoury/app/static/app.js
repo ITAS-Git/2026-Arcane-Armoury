@@ -12,6 +12,21 @@ const SPELL_LEVELS = 6;
 // WebSocket connection to Flask-SocketIO server
 const socket = io();
 
+// --- Connection lifecycle logging ---
+socket.on("connect", () => {
+  console.log("[Socket] Connected. SID:", socket.id);
+  // Request a full state push so Player is immediately up-to-date on load
+  socket.emit("request_state");
+});
+
+socket.on("disconnect", (reason) => {
+  console.warn("[Socket] Disconnected:", reason);
+});
+
+socket.on("connect_error", (err) => {
+  console.error("[Socket] Connection error:", err.message);
+});
+
 function clamp(n, min, max) {
   n = Number(n);
   if (Number.isNaN(n)) n = min;
