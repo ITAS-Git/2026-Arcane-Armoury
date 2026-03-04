@@ -71,10 +71,7 @@ def register_routes(app):
 
     @socketio.on("request_state")
     def on_request_state():
-        """
-        Client explicitly asks for latest state (e.g. on page load).
-        Sends cached state back to just the requesting client.
-        """
+        """Client asks for latest state on page load."""
         if _last_state is not None:
             emit("state_updated", _last_state)
 
@@ -82,9 +79,9 @@ def register_routes(app):
     def on_state_set(state):
         """
         DM sends full state snapshot.
-        Cache it server-side, then re-broadcast to everyone EXCEPT the sender
-        to avoid double-render on the DM screen.
+        Broadcast to ALL clients including sender — the DM tab handles
+        deduplication itself in JS using the 'dm_ack' flag.
         """
         global _last_state
         _last_state = state
-        emit("state_updated", state, broadcast=True, include_self=False)
+        socketio.emit("state_updated", state)
