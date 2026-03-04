@@ -2,6 +2,8 @@
    - Stores state in localStorage (so refresh keeps it)
    - DM broadcasts updates via WebSocket (Socket.IO)
    - Player listens and re-renders immediately
+   - hp_delta / slot_delta re-broadcast so all screens stay in sync
+   - Portrait img falls back to Tiefling.png on load error
 */
 console.log("app.js loaded");
 const STORAGE_KEY = "arcane_armoury_state_v3";
@@ -97,6 +99,8 @@ function setImg(id, src) {
   const el = document.getElementById(id);
   if (!el) return;
   el.src = src || "";
+  // Fall back to default portrait if the URL is broken
+  el.onerror = () => { el.src = "/static/Tiefling.png"; el.onerror = null; };
 }
 
 function renderHp(i, hp, maxHp) {
@@ -261,6 +265,9 @@ socket.on("hp_delta", ({ player, delta }) => {
   const normalized = normalizeState(s);
   saveState(normalized);
   render(normalized);
+
+  // Re-broadcast so DM screen and other Player screens stay in sync
+  broadcastState(normalized);
 });
 
 /* Optional: receive spell slot delta events */
@@ -279,6 +286,9 @@ socket.on("slot_delta", ({ player, level, delta }) => {
   const normalized = normalizeState(s);
   saveState(normalized);
   render(normalized);
+
+  // Re-broadcast so DM screen and other Player screens stay in sync
+  broadcastState(normalized);
 });
 
 const state = loadState();
