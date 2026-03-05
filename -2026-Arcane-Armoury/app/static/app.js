@@ -10,7 +10,7 @@ const STORAGE_KEY = "arcane_armoury_state_v3";
 const SPELL_LEVELS = 6;
 
 // WebSocket connection to Flask-SocketIO server
-const socket = io();
+const socket = io({ transports: ["websocket"] });
 
 function clamp(n, min, max) {
   n = Number(n);
@@ -159,9 +159,7 @@ function render(state) {
 }
 
 /* WebSocket broadcast (DM -> server -> everyone) */
-let _suppressNextUpdate = false;
 function broadcastState(state) {
-  _suppressNextUpdate = true;  // DM tab: ignore the echo coming back
   socket.emit("state_set", state);
 }
 
@@ -251,12 +249,6 @@ function wireDm(state) {
 
 /* WebSocket receive: full state update from server */
 socket.on("state_updated", (incoming) => {
-  if (_suppressNextUpdate) {
-    _suppressNextUpdate = false;
-    console.log("[Socket] state_updated echo suppressed on DM tab");
-    return;
-  }
-  console.log("[Socket] state_updated received — rendering");
   const s = normalizeState(incoming);
   saveState(s);
   render(s);
