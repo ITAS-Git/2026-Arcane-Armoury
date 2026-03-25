@@ -8,9 +8,16 @@
 console.log("app.js loaded");
 const STORAGE_KEY = "arcane_armoury_state_v3";
 const SPELL_LEVELS = 6;
-
+const IS_DM = document.body.classList.contains("mode-dm");
 // WebSocket connection to Flask-SocketIO server
 const socket = io({ transports: ["websocket"] });
+
+socket.on("connect", () => {
+  console.log("[Socket] Connected. SID:", socket.id);
+  socket.emit("request_state");
+});
+socket.on("disconnect", (reason) => console.warn("[Socket] Disconnected:", reason));
+socket.on("connect_error", (err) => console.error("[Socket] Error:", err.message));
 
 function clamp(n, min, max) {
   n = Number(n);
@@ -159,7 +166,9 @@ function render(state) {
 }
 
 /* WebSocket broadcast (DM -> server -> everyone) */
+let _suppressNextUpdate = false;
 function broadcastState(state) {
+  _suppressNextUpdate = true;
   socket.emit("state_set", state);
 }
 
@@ -249,6 +258,12 @@ function wireDm(state) {
 
 /* WebSocket receive: full state update from server */
 socket.on("state_updated", (incoming) => {
+  console.log("[Socket] state_updated received");
+  if (_suppressNextUpdate) {
+    _suppressNextUpdate = false;
+    console.log("[Socket] suppressed echo on DM tab");
+    return;
+  }
   const s = normalizeState(incoming);
   saveState(s);
   render(s);
