@@ -45,6 +45,7 @@ function defaultState() {
     turnIndex: 0,
     turnNote: "Status: Ready",
     portrait: ""
+    background: "oldpaper.png"
   };
 }
 
@@ -79,7 +80,7 @@ function normalizeState(s) {
   out.turnIndex = clamp(s.turnIndex ?? 0, 0, 3);
   out.turnNote = (s.turnNote ?? out.turnNote) || "";
   out.portrait = (s.portrait ?? out.portrait) || "";
-
+  out.background = s.background || "oldpaper.png";
   return out;
 }
 
@@ -163,6 +164,7 @@ function render(state) {
   setText("turn-name", current?.name || "Player 1");
   setText("turn-note", state.turnNote || "");
   setImg("turn-portrait", state.portrait || "/static/Tiefling.png");
+  document.body.style.backgroundImage = `url('/static/${state.background || "oldpaper.png"}')`; 
 }
 
 /* WebSocket broadcast (DM -> server -> everyone) */
@@ -219,6 +221,9 @@ function wireDm(state) {
 
     const portrait = document.getElementById("dm-portrait");
     if (portrait) portrait.value = s.portrait || "";
+
+    const bg = document.getElementById("dm-background");
+    if (bg) bg.value = s.background || "oldpaper.png";
   }
 
   writeInputsFromState(state);
@@ -233,7 +238,7 @@ function wireDm(state) {
 
     next.turnNote = document.getElementById("dm-note")?.value?.trim() || "";
     next.portrait = document.getElementById("dm-portrait")?.value?.trim() || "";
-
+    next.background = document.getElementById("dm-background")?.value || "oldpaper.png";
     saveState(next);
     render(next);
 
