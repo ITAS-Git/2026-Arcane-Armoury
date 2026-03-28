@@ -44,7 +44,7 @@ function defaultState() {
     ],
     turnIndex: 0,
     turnNote: "Status: Ready",
-    portrait: ""
+    portrait: "",
     background: "oldpaper.png"
   };
 }
