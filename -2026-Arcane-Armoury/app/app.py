@@ -4,10 +4,7 @@ from flask_socketio import SocketIO
 from pathlib import Path
 import os
 
-db = SQLAlchemy()
-
-# Force threading mode (works on Windows + Python 3.13)
-socketio = SocketIO(async_mode="threading", cors_allowed_origins="*")
+from . import db, socketio
 
 
 def create_app() -> Flask:

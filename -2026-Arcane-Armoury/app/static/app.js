@@ -37,16 +37,36 @@ function makeDefaultSlots() {
 function defaultState() {
   return {
     players: [
-      { name: "Player 1", hp: 30, maxHp: 30, slots: makeDefaultSlots() },
-      { name: "Player 2", hp: 25, maxHp: 25, slots: makeDefaultSlots() },
-      { name: "Player 3", hp: 18, maxHp: 18, slots: makeDefaultSlots() },
-      { name: "Player 4", hp: 40, maxHp: 40, slots: makeDefaultSlots() },
+      { name: "Player 1", hp: 30, maxHp: 30, slots: makeDefaultSlots(), portrait: ""},
+      { name: "Player 2", hp: 25, maxHp: 25, slots: makeDefaultSlots(), portrait: "" },
+      { name: "Player 3", hp: 18, maxHp: 18, slots: makeDefaultSlots(), portrait: "" },
+      { name: "Player 4", hp: 40, maxHp: 40, slots: makeDefaultSlots(), portrait: "" },
     ],
     turnIndex: 0,
     turnNote: "Status: Ready",
     portrait: "",
     background: "oldpaper.png"
   };
+}
+
+async function loadPortraitOptions() {
+  try {
+    const res = await fetch("/api/portraits");
+    const files = await res.json();
+    document.querySelectorAll(".portrait-select").forEach(sel => {
+      const current = sel.value;
+      sel.innerHTML = `<option value="">-- None --</option>`;
+      files.forEach(f => {
+        const opt = document.createElement("option");
+        opt.value = f;
+        opt.textContent = f;
+        if (f === current) opt.selected = true;
+        sel.appendChild(opt);
+      });
+    });
+  } catch (e) {
+    console.error("Could not load portraits:", e);
+  }
 }
 
 /** Ensure saved state always has L1..L6 and valid numbers */
@@ -73,13 +93,13 @@ function normalizeState(s) {
       name: (p?.name ?? `Player ${n}`) || `Player ${n}`,
       hp,
       maxHp,
-      slots
+      slots,
+      portrait: p?.portrait || ""
     };
   });
 
   out.turnIndex = clamp(s.turnIndex ?? 0, 0, 3);
   out.turnNote = (s.turnNote ?? out.turnNote) || "";
-  out.portrait = (s.portrait ?? out.portrait) || "";
   out.background = s.background || "oldpaper.png";
   return out;
 }
@@ -163,7 +183,9 @@ function render(state) {
   const current = state.players[state.turnIndex] || state.players[0];
   setText("turn-name", current?.name || "Player 1");
   setText("turn-note", state.turnNote || "");
-  setImg("turn-portrait", state.portrait || "/static/Tiefling.png");
+  setImg(
+  "turn-portrait",
+  current?.portrait ? `/static/${current.portrait}` : "/static/Tiefling.png");
   document.body.style.backgroundImage = `url('/static/${state.background || "oldpaper.png"}')`; 
 }
 
@@ -174,16 +196,20 @@ function broadcastState(state) {
   socket.emit("state_set", state);
 }
 
+
 /* DM: read inputs and push state */
 function wireDm(state) {
   const applyBtn = document.getElementById("dm-apply");
   const resetBtn = document.getElementById("dm-reset");
-  if (!applyBtn) return; // not DM page
+  if (!applyBtn) return;
 
-  function readPlayer(n) {
+  const hpDirty = [false, false, false, false];
+
+  function readPlayer(n, oldPlayer) {
     const name = document.getElementById(`dm-p${n}-name`)?.value?.trim() || `Player ${n}`;
     const maxHp = clamp(document.getElementById(`dm-p${n}-max`)?.value, 1, 9999);
-    const hp = clamp(document.getElementById(`dm-p${n}-hp`)?.value, 0, maxHp);
+    const hpInput = clamp(document.getElementById(`dm-p${n}-hp`)?.value, 0, maxHp);
+    const portrait = document.getElementById(`dm-p${n}-portrait`)?.value?.trim() || "";
 
     const slots = {};
     for (let lvl = 1; lvl <= SPELL_LEVELS; lvl++) {
@@ -192,7 +218,14 @@ function wireDm(state) {
       slots[lvl] = { t, f };
     }
 
-    return { name, hp, maxHp, slots };
+    let hp;
+    if (hpDirty[n - 1]) {
+      hp = hpInput;
+    } else {
+      hp = clamp(oldPlayer?.hp ?? hpInput, 0, maxHp);
+    }
+
+    return { name, hp, maxHp, slots, portrait };
   }
 
   function writeInputsFromState(s) {
@@ -206,11 +239,14 @@ function wireDm(state) {
       setVal(`dm-p${n}-name`, p.name || "");
       setVal(`dm-p${n}-max`, p.maxHp ?? 1);
       setVal(`dm-p${n}-hp`, p.hp ?? 0);
+      setVal(`dm-p${n}-portrait`, p.portrait || "");
 
       for (let lvl = 1; lvl <= SPELL_LEVELS; lvl++) {
         setVal(`dm-p${n}-l${lvl}t`, p.slots?.[lvl]?.t ?? 0);
         setVal(`dm-p${n}-l${lvl}f`, p.slots?.[lvl]?.f ?? 0);
       }
+
+      hpDirty[idx] = false;
     });
 
     const turnSel = document.getElementById("dm-turn");
@@ -219,11 +255,17 @@ function wireDm(state) {
     const note = document.getElementById("dm-note");
     if (note) note.value = s.turnNote || "";
 
-    const portrait = document.getElementById("dm-portrait");
-    if (portrait) portrait.value = s.portrait || "";
-
     const bg = document.getElementById("dm-background");
     if (bg) bg.value = s.background || "oldpaper.png";
+  }
+
+  for (let n = 1; n <= 4; n++) {
+    const hpEl = document.getElementById(`dm-p${n}-hp`);
+    if (hpEl) {
+      hpEl.addEventListener("input", () => {
+        hpDirty[n - 1] = true;
+      });
+    }
   }
 
   writeInputsFromState(state);
@@ -231,20 +273,18 @@ function wireDm(state) {
   applyBtn.addEventListener("click", () => {
     const next = normalizeState(structuredClone(state));
 
-    next.players = [1, 2, 3, 4].map(readPlayer);
+    next.players = [1, 2, 3, 4].map((n, idx) => readPlayer(n, state.players[idx]));
 
     const turnVal = clamp(document.getElementById("dm-turn")?.value, 1, 4);
     next.turnIndex = turnVal - 1;
 
     next.turnNote = document.getElementById("dm-note")?.value?.trim() || "";
-    next.portrait = document.getElementById("dm-portrait")?.value?.trim() || "";
     next.background = document.getElementById("dm-background")?.value || "oldpaper.png";
+
     saveState(next);
     render(next);
-
-    // WebSocket broadcast to all screens
     broadcastState(next);
-
+    writeInputsFromState(next);
     Object.assign(state, next);
   });
 
@@ -253,9 +293,7 @@ function wireDm(state) {
     const fresh = defaultState();
     saveState(fresh);
     render(fresh);
-
     broadcastState(fresh);
-
     writeInputsFromState(fresh);
     Object.assign(state, fresh);
   });
@@ -264,17 +302,30 @@ function wireDm(state) {
 /* WebSocket receive: full state update from server */
 socket.on("state_updated", (incoming) => {
   console.log("[Socket] state_updated received");
+
   if (_suppressNextUpdate) {
     _suppressNextUpdate = false;
     console.log("[Socket] suppressed echo on DM tab");
     return;
   }
+
   const s = normalizeState(incoming);
   saveState(s);
   render(s);
+
+  Object.assign(state, structuredClone(s));
+
+  if (IS_DM) {
+    for (let i = 0; i < s.players.length; i++) {
+      const hpEl = document.getElementById(`dm-p${i + 1}-hp`);
+      const maxEl = document.getElementById(`dm-p${i + 1}-max`);
+      if (hpEl) hpEl.value = s.players[i].hp;
+      if (maxEl) maxEl.value = s.players[i].maxHp;
+    }
+  }
 });
 
-/* Optional: receive HP delta events (for Python button updates) */
+/* Optional: receive HP delta events */
 socket.on("hp_delta", ({ player, delta }) => {
   const s = loadState();
   const idx = clamp(player, 1, 4) - 1;
@@ -285,9 +336,11 @@ socket.on("hp_delta", ({ player, delta }) => {
   const normalized = normalizeState(s);
   saveState(normalized);
   render(normalized);
+  Object.assign(state, structuredClone(normalized));
 
-  // Re-broadcast so DM screen and other Player screens stay in sync
-  broadcastState(normalized);
+  if (IS_DM) {
+    broadcastState(normalized);
+  }
 });
 
 /* Optional: receive spell slot delta events */
@@ -306,11 +359,14 @@ socket.on("slot_delta", ({ player, level, delta }) => {
   const normalized = normalizeState(s);
   saveState(normalized);
   render(normalized);
+  Object.assign(state, structuredClone(normalized));
 
-  // Re-broadcast so DM screen and other Player screens stay in sync
-  broadcastState(normalized);
+  if (IS_DM) {
+    broadcastState(normalized);
+  }
 });
 
 const state = loadState();
 render(state);
 wireDm(state);
+loadPortraitOptions();
